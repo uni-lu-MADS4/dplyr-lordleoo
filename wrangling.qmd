@@ -5,9 +5,7 @@ date: "2025-10-13"
 output: html_document
 editor: source
 ---
-
-
-
+## Note to Baraa: This is part one. Start with this (wrangling)
 
 ## Part one - Wrangling
 
@@ -20,13 +18,57 @@ Assign to the name `judgments` and correct the column types where needed.
 
 ```{r}
 # Write your answer here
+getwd()
+library(tidyverse)
+judgements <- readr::read_delim("Data/judgments.tsv")
+# Note: i used the variable name "judgements" instead of "judgments". 
+# spec(judgments)
+
+jud2 <- readr::read_delim("data/judgments.tsv",
+                          col_types =
+                          cols(start_date = col_date(format = "%d/%m/%Y"),
+                          end_date = col_date(format = "%d/%m/%Y"),
+                          finished = "f", # f=factor
+                          condition = "f", # f=factor
+                          gender = "f", # f=factor
+                          logbook = "c", #c = character
+                          exclude = "f", # f=factor
+                          moral_judgment = "d", # double
+                          moral_judgment_disgust = "d", # double
+                          moral_judgment_non_disgust = "d", # double
+                          .default = col_integer()))
+problems(jud2)
+# glimpse(jud2)
+# colnames(jud2)
+# length(jud2)
+
+# Exercise
+```
+To read more about `readr::read_delim` and `col_types`, see the [official documentation](https://readr.tidyverse.org/reference/read_delim.html)
+```
+c = character
+i = integer
+n = number
+d = double
+l = logical
+f = factor
+D = date
+T = date time
+t = time
+? = guess
+_ or - = skip
 ```
 
-
 ### Use `glimpse()` to identify columns and column types.
+```{r}
+glimpse(jud2)
+```
 
-What are the dimensions of the data set.
-
+What are the dimensions of the data set?
+Data has ```r length(jud2)``` columns.\n
+Data has size ```r dim(jud2)```.\n
+Data has `r length(jud2)` columns.\n
+Data has size `r dim(jud2)`.\n
 
 ### Exercise 1 
 
@@ -36,27 +78,50 @@ You can combine the following tasks into a single statement.
 Select `gender`, `subject`, `age` and referring to the `STAI` questionnaire.
 
 ```{r}
-# Write your answer here
+judgements |>
+select(c('gender','subject','age'))
+
+judgements |>
+select(starts_with("STAI_"))
+```
+
+Retrieve all subjects younger than 20 which are in the stress group. The column for the group is
+condition.
+```{r}
+filter(judgements, age<20 & condition =="stress")
 ```
 
 
 #### Select all subjects with `STAI_pre` greater than 65 and `STAI_post` greater than 40
-
 ```{r}
-# Write your answer here
+filter(judgements, STAI_pre>65 & STAI_post>40)
 ```
 
 
-#### Sort the observations by `STAI_pre` so that the subject with the highest score is on top.
-
+Arrange all observations by `STAI_pre` so that the subject with the lowest score is on top. What is
+the subject in question?
 ```{r}
-# Write your answer here
+judgements |> 
+       arrange(STAI_pre) |> 
+       relocate(subject, STAI_pre)
+```
+Answer: The subject is a 22 years old female with stress. 
+
+#### Sort the observations by `STAI_pre` so that the subject with the highest score is on top.
+```{r}
+judgements |> 
+       arrange(desc(STAI_pre)) |> 
+       relocate(subject, STAI_pre)
+# if you don't specify "after=..." it moves it up to after 1st column (to second column)
 ```
 
 #### For better readability, move the subject, STAI_pre and STAI_post columns to the first positions.
 
 ```{r}
-# Write your answer here
+judgements <- judgements |> 
+         relocate(subject, STAI_pre, STAI_post)
+# This also works (specify column names as strings): 
+# judgements |> relocate(c('subject','STAI_pre','STAI_post'))
 ```
 
 #### Check if the data set contains duplicated rows
@@ -67,10 +132,15 @@ Compare the number of rows in the raw input table with the number of rows
 in a de-duplicated table containing unique rows only. 
 :::
 
+Original dataset size is: [`r dim(judgements) `]
+
 ```{r}
-# Your answer in code here
+# judgements |> filter(exclude == 0) |> distinct(start_date, end_date) # This is in the slides but i think it relates to an old version of the assignment
+
+judgements_unique <- judgements |> distinct()
 ```
 
+Filtered dataset (after removing duplicates rows only) has [`r judgements_unique |> dim()`] rows
 
 
 ### Exercise 2
@@ -87,23 +157,48 @@ It should contain "low", "normal" and "high" entries depending on the `STAI_pre`
 
 #### Arrange the table by `STAI_pre` in a descending manner.
 
+I will carry out these changes on `judgements_unique` to preserve the original data set in case if I mess up.
 ```{r}
-# Write your answer here
-```
+# My solution:
+# judgements_unique <- judgements_unique |> 
+#   mutate(STAI_pre_category = case_when(STAI_pre < 25 ~ "poor",
+#                                        STAI_pre > 65 ~ "mid",
+#                                        .default = "normal")) |> 
+#   relocate(STAI_pre_category, .after=STAI_post)
 
+# Solution from the slides. More robust I'd say
+judgements_unique <- judgements_unique |> 
+  mutate(STAI_pre_category = case_match(c(0:24)  ~ "poor",
+                                        c(25:65) ~ "mid",
+                                       .default = "high")) |> 
+  relocate(STAI_pre_category, .after=STAI_post)
+
+```
+## Part which is in the slides but not in the .QMD file
+Abbreviate the gender column such that only the first character remains.
+
+```{r}
+judgements |> mutate(gender = str_sub(gender, 1, 1))
+```
 
 ### Display distinct values in `STAI_pre` and `STAI_pre_category`.
-
 ```{r}
-# Write your answer here
+judgements_unique |> distinct(STAI_pre, STAI_pre_category)
+judgements_unique |> select(STAI_pre,STAI_pre_category) |> distinct() # also works but less intelligent
+# judgements_unique |> select(c('STAI_pre', 'STAI_pre_category')) |>  distinct()
+
 ```
 
 
-##### Normalize the values in the REI group
+##### Normalize the values in the `REI` group
 Divide all entries in the REI questionnaire by 5, the maximal value.
 
 ```{r}
-# Write your answer here
+# judgements_unique |> select(starts_with('REI_'))
+# judgements_unique |> select(starts_with('REI_'))
+judgements |> mutate(across(matches("REI_\\d"), 
+                           \(x) x / 5)) |> 
+             relocate(starts_with("REI")) # Anonymous function
 ```
 
 

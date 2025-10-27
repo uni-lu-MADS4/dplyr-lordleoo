@@ -1,10 +1,12 @@
 ---
+name: Baraa MOHANDES
 title: "Grouping and summarizing"
 format: html
 editor: source
 date: "2025-10-13"
 output: html_document
 ---
+## Note to Baraa: This is part Two. You should do the other one first (Wrangling)
 
 
 ### Identify the duplicated row
@@ -14,10 +16,28 @@ Identify the duplicated subject.
 Compute the mean, the median, the standard deviation as well as min and max values.
 Find meaningful short names for the functions such as `med` for  the median.
 
+
 Assign `judgments_condition_stats` to the results.
 
 ```{r}
-# Write your answer here
+# If you're getting an error that "Summarize" command is unrecognized, it is because
+# The TIDYVERSE library/package wasn't imported. and that's because this file is the SECOND PART
+# of the assignment, and you didn't read what i wrote above
+# This (grouping.qmd) is part 2 of the assignment. and you should do the other file (wrangling.qmd) first
+# anyway, in case you already did that, import tidyverse with: library(tidyverse)
+library(tidyverse) # I have to import it for the QUARTO document to compile
+judgements <- readr::read_delim("Data/judgments.tsv") # I have to do this for the QUARTO document to compile
+
+
+judgements |>
+group_by(condition) |>
+summarise(min = min(mood_pre, na.rm = TRUE),
+max = max(mood_pre, na.rm = TRUE))
+
+# jud2 |>
+# group_by(condition) |>
+# summarise(min = min(mood_pre, na.rm = TRUE),
+# max = max(mood_pre, na.rm = TRUE))
 ```
 
 
@@ -25,15 +45,22 @@ Assign `judgments_condition_stats` to the results.
 ### Sort by groups
 
 Find the number of subjects by `age`, `gender` and `condition`, e.g. how many 20 years of age females are in the `stress` group. 
+```{r}
+ans_size <- judgements |> filter(condition == 'stress', gender == 'female', age==20) |> dim()
+```
+Answer: There are ```r ans_size[1]``` stressed 20 years old females
+
 
 Sort the resulting tibble such that the condition that contains the most populous group is sorted first (i.e. `stress` or `control` appear together). 
-
 ```{r}
-# Write your answer here
+judgements |> 
+       arrange(condition, ) |> 
+       relocate(subject, STAI_pre)
+
+judgements |>
+ mutate(n = n(),
+ .by = condition) |>
+ relocate(subject, condition, n)
 ```
 
 Ensure that the resulting tibble does not contain groups.
-
-
-
-

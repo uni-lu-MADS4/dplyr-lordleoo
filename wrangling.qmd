@@ -168,7 +168,8 @@ I will carry out these changes on `judgements_unique` to preserve the original d
 
 # Solution from the slides. More robust I'd say
 judgements_unique <- judgements_unique |> 
-  mutate(STAI_pre_category = case_match(c(0:24)  ~ "poor",
+  mutate(STAI_pre_category = case_match(STAI_pre,
+                                        c(0:24)  ~ "poor",
                                         c(25:65) ~ "mid",
                                        .default = "high")) |> 
   relocate(STAI_pre_category, .after=STAI_post)
